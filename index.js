@@ -28,6 +28,8 @@ async function run() {
     // await client.connect();
 
     const userCollection = client.db('realEstateDB').collection('users')
+    const propertyCollection = client.db('realEstateDB').collection('properties')
+    const reviewCollection = client.db('realEstateDB').collection('reviews')
 
     // middlewares verify token
     const verifyToken = async (req, res, next) => {
@@ -96,6 +98,20 @@ async function run() {
       const result = await userCollection.deleteOne(query)
       res.send(result)
     })
+    // update user role
+    app.patch('/users/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const {role} = req.body;
+      const updatedRole = {
+        $set:{
+          role:role
+        }
+      }
+      const result = await userCollection.updateOne(query,updatedRole)
+      res.send(result)
+    })
+
     // check admin or agent
     app.get('/users/checkRole/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -115,20 +131,49 @@ async function run() {
       res.send({roleInfo})
     })
 
-    // update user role
-    app.patch('/users/admin/:id', async (req, res) => {
+    // properties related api
+    app.post('/properties',async(req,res)=>{
+      const properties = req.body;
+      const result = await propertyCollection.insertOne(properties)
+      res.send(result)
+    })
+    app.get('/properties',async(req,res)=>{
+      const query = {verified_status: "verified"}
+      const result = await propertyCollection.find(query).toArray()
+      res.send(result)
+    })
+    app.get('/properties/:id',async(req,res)=>{
+      const id= req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await propertyCollection.findOne(query)
+      res.send(result)
+    })
+    app.delete('/properties/:id',async(req,res)=>{
       const id = req.params.id;
       const query = {_id: new ObjectId(id)}
-      const {role} = req.body;
-      const updatedRole = {
+      const result = await propertyCollection.deleteOne(query)
+      res.send(result)
+    })
+    app.patch('/properties/:id',async(req,res)=>{
+      const property = req.body;
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const updateProperty = {
         $set:{
-          role:role
+          propertyImage: property.propertyImage,
+          propertyTitle: property.propertyTitle,
+          propertyLocation: property.propertyLocation,
+          priceRange: property.priceRange
         }
       }
-      const result = await userCollection.updateOne(query,updatedRole)
+      const result = await propertyCollection.updateOne(query,updateProperty)
       res.send(result)
     })
 
+    // review related api
+  
+
+    
 
 
     // Send a ping to confirm a successful connection
