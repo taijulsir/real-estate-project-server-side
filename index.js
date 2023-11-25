@@ -112,19 +112,19 @@ async function run() {
         roleInfo.admin = user.role === 'admin';
         roleInfo.agent = user.role === 'agent';
       }
-      res.send(roleInfo)
+      res.send({roleInfo})
     })
 
+    // update user role
     app.patch('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
       const query = {_id: new ObjectId(id)}
-      const role = req.body;
+      const {role} = req.body;
       const updatedRole = {
         $set:{
           role:role
         }
       }
-      console.log(updatedRole)
       const result = await userCollection.updateOne(query,updatedRole)
       res.send(result)
     })
