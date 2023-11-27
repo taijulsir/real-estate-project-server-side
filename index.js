@@ -142,7 +142,7 @@ async function run() {
       const result = await propertyCollection.find(query).toArray()
       res.send(result)
     })
-    app.get('/manageProperties',async(req,res)=>{
+    app.get('/manageProperties', async (req, res) => {
       const result = await propertyCollection.find().toArray()
       res.send(result)
     })
@@ -180,14 +180,23 @@ async function run() {
       res.send(result)
 
     })
+    app.patch('/properties/verifiedStatus/:id', async (req, res) => {
+      const { verified_status } = req.body;
+      const query = { _id: new ObjectId(req.params.id) }
+      const updateVerifiedStatus = {
+        $set: {
+          verified_status: verified_status
+        }
+      }
+      const result = await propertyCollection.updateOne(query, updateVerifiedStatus)
+      res.send(result)
+    })
 
     // review related api
     app.post('/reviews', async (req, res) => {
-      {
-        const reviews = req.body;
-        const result = await reviewCollection.insertOne(reviews)
-        res.send(result)
-      }
+      const reviews = req.body;
+      const result = await reviewCollection.insertOne(reviews)
+      res.send(result)
     })
     app.get('/reviews', async (req, res) => {
       const result = await reviewCollection.find().toArray()
@@ -197,6 +206,12 @@ async function run() {
       const email = req.params.email;
       const query = { email: email }
       const result = await reviewCollection.find(query).toArray()
+      res.send(result)
+    })
+    app.get('/reviews/:propertyTitle',async(req,res)=>{
+      const reviews = req.params.propertyTitle;
+      const query = {propertyTitle: reviews}
+      const result = await propertyCollection.find(query).toArray()
       res.send(result)
     })
     app.delete('/reviews/:id', async (req, res) => {
