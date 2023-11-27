@@ -30,6 +30,7 @@ async function run() {
     const userCollection = client.db('realEstateDB').collection('users')
     const propertyCollection = client.db('realEstateDB').collection('properties')
     const reviewCollection = client.db('realEstateDB').collection('reviews')
+    const wishListCollection = client.db('realEstateDB').collection('wishlist')
 
     // middlewares verify token
     const verifyToken = async (req, res, next) => {
@@ -86,12 +87,10 @@ async function run() {
       const result = await userCollection.insertOne(user)
       res.send(result)
     })
-
     app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray()
       res.send(result)
     })
-
     app.delete('/users/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -152,7 +151,7 @@ async function run() {
       const result = await propertyCollection.find(query).toArray()
       res.send(result)
     })
-    app.get('/properties/:id', async (req, res) => {
+    app.get('/singleProperties/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await propertyCollection.findOne(query)
@@ -198,8 +197,8 @@ async function run() {
       const result = await reviewCollection.insertOne(reviews)
       res.send(result)
     })
-    app.get('/reviews', async (req, res) => {
-      const result = await reviewCollection.find().toArray()
+    app.get('/allReviews', async (req, res) => {
+      const result = await reviewCollection.find().sort({ reviewTime: -1 }).toArray()
       res.send(result)
     })
     app.get('/reviews/:email', async (req, res) => {
@@ -208,10 +207,16 @@ async function run() {
       const result = await reviewCollection.find(query).toArray()
       res.send(result)
     })
-    app.get('/reviews/:propertyTitle',async(req,res)=>{
+    app.get('/singleReviews/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {propertyId:id}
+      const result = await reviewCollection.find(query).toArray()
+      res.send(result)
+    })
+    app.get('/reviews/:propertyTitle', async (req, res) => {
       const reviews = req.params.propertyTitle;
-      const query = {propertyTitle: reviews}
-      const result = await propertyCollection.find(query).toArray()
+      const query = { propertyTitle: reviews }
+      const result = await reviewCollection.find(query).toArray()
       res.send(result)
     })
     app.delete('/reviews/:id', async (req, res) => {
@@ -221,8 +226,28 @@ async function run() {
       res.send(result)
     })
 
+    // wishlist related api
+    app.post('/wishlist', async (req, res) => {
+      const wishlist = req.body;
+      const query = { wishlistId: wishlist?.wishlistId }
+      const isExisting = await wishListCollection.findOne(query)
+      if (isExisting) {
+        return res.send({ message: "already added this item", insertedId: null })
+      }
+      const result = await wishListCollection.insertOne(wishlist)
+      res.send(result)
+    })
 
-
+    app.get('/wishlist',async(req,res)=>{
+      const result = await wishListCollection.find().toArray()
+      res.send(res)
+    })
+    app.get('/allWishlist/:wishListerEmail',async(req,res)=> {
+      const email = req.params.wishListerEmail;
+      const query = {wishlisterEmail: email}
+      const result = await wishListCollection.find(query).toArray()
+      res.send(result)
+    })
 
 
     // Send a ping to confirm a successful connection
