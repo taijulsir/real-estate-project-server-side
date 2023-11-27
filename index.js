@@ -101,14 +101,14 @@ async function run() {
     // update user role
     app.patch('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
-      const {role} = req.body;
+      const query = { _id: new ObjectId(id) }
+      const { role } = req.body;
       const updatedRole = {
-        $set:{
-          role:role
+        $set: {
+          role: role
         }
       }
-      const result = await userCollection.updateOne(query,updatedRole)
+      const result = await userCollection.updateOne(query, updatedRole)
       res.send(result)
     })
 
@@ -128,80 +128,82 @@ async function run() {
         roleInfo.admin = user.role === 'admin';
         roleInfo.agent = user.role === 'agent';
       }
-      res.send({roleInfo})
+      res.send({ roleInfo })
     })
 
     // properties related api
-    app.post('/properties',async(req,res)=>{
+    app.post('/properties', async (req, res) => {
       const properties = req.body;
       const result = await propertyCollection.insertOne(properties)
       res.send(result)
     })
-    app.get('/properties',async(req,res)=>{
-      const query = {verified_status: "verified"}
+    app.get('/properties', async (req, res) => {
+      const query = { verified_status: "verified" }
       const result = await propertyCollection.find(query).toArray()
       res.send(result)
     })
-    app.get('/agentProperties/:email',async(req,res)=>{
+    app.get('/agentProperties/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {agentEmail: email}
-    
+      const query = { agentEmail: email }
       const result = await propertyCollection.find(query).toArray()
       res.send(result)
     })
-    app.get('/properties/:id',async(req,res)=>{
-      const id= req.params.id;
-      const query = {_id: new ObjectId(id)}
+    app.get('/properties/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
       const result = await propertyCollection.findOne(query)
       res.send(result)
     })
-    app.delete('/properties/:id',async(req,res)=>{
+    app.delete('/properties/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await propertyCollection.deleteOne(query)
       res.send(result)
     })
-    app.patch('/properties/:id',async(req,res)=>{
+    app.patch('/properties/:id', async (req, res) => {
       const property = req.body;
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const updateProperty = {
-        $set:{
+        $set: {
           propertyImage: property.propertyImage,
           propertyTitle: property.propertyTitle,
           propertyLocation: property.propertyLocation,
           priceRange: property.priceRange
         }
       }
-      const result = await propertyCollection.updateOne(query,updateProperty)
+      const result = await propertyCollection.updateOne(query, updateProperty);
       res.send(result)
+
     })
 
     // review related api
-    app.post('/reviews',async(req,res)=>{{
-      const reviews = req.body;
-      const result = await reviewCollection.insertOne(reviews)
-      res.send(result)
-    }})
-    app.get('/reviews',async(req,res)=>{
+    app.post('/reviews', async (req, res) => {
+      {
+        const reviews = req.body;
+        const result = await reviewCollection.insertOne(reviews)
+        res.send(result)
+      }
+    })
+    app.get('/reviews', async (req, res) => {
       const result = await reviewCollection.find().toArray()
       res.send(result)
     })
-    app.get('/reviews/:email',async(req,res)=>{
+    app.get('/reviews/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {email: email}
+      const query = { email: email }
       const result = await reviewCollection.find(query).toArray()
       res.send(result)
     })
-    app.delete('/reviews/:id',async(req,res)=>{
+    app.delete('/reviews/:id', async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await reviewCollection.deleteOne(query)
       res.send(result)
     })
 
 
-    
+
 
 
     // Send a ping to confirm a successful connection
