@@ -137,9 +137,13 @@ async function run() {
       const result = await propertyCollection.insertOne(properties)
       res.send(result)
     })
-    app.get('/properties', async (req, res) => {
+    app.get('/properties/verified', async (req, res) => {
       const query = { verified_status: "verified" }
       const result = await propertyCollection.find(query).toArray()
+      res.send(result)
+    })
+    app.get('/manageProperties',async(req,res)=>{
+      const result = await propertyCollection.find().toArray()
       res.send(result)
     })
     app.get('/agentProperties/:email', async (req, res) => {
