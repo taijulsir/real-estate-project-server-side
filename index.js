@@ -210,7 +210,7 @@ async function run() {
     })
     app.get('/singleReviews/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {propertyId:id}
+      const query = { propertyId: id }
       const result = await reviewCollection.find(query).toArray()
       res.send(result)
     })
@@ -238,27 +238,48 @@ async function run() {
       const result = await wishListCollection.insertOne(wishlist)
       res.send(result)
     })
-    app.get('/wishlist',async(req,res)=>{
-      const result = await wishListCollection.find().toArray()
-      res.send(res)
+    app.get('/wishlist/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const wishlistItem = await wishListCollection.findOne(query)
+      const priceRange = wishlistItem.priceRange;
+      const [minPrice, maxPrice] = priceRange
+        .split(' - ')
+        .map((price) => parseFloat(price.replace(/,/g, '')));
+      const result = {
+        ...wishlistItem,
+        priceRange: [minPrice, maxPrice],
+      };
+      res.send(result);
     })
-    app.get('/allWishlist/:wishListerEmail',async(req,res)=> {
+    app.get('/allWishlist/:wishListerEmail', async (req, res) => {
       const email = req.params.wishListerEmail;
-      const query = {wishlisterEmail: email}
+      const query = { wishlisterEmail: email }
       const result = await wishListCollection.find(query).toArray()
       res.send(result)
     })
-    app.delete('/wishlist/:id',async(req,res)=>{
+    app.delete('/wishlist/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await wishListCollection.deleteOne(query)
       res.send(result)
     })
 
     // user property brought related api
-  
+    app.post('/propertyBrought', async (req, res) => {
+      const brought = req.body;
+      const result = await propertyBroughtCollection.insertOne(brought)
+      res.send(result)
+    })
+    app.get('/propertyBrought/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { buyerEmail: email }
+      const result = await propertyBroughtCollection.find(query).toArray()
+      res.send(result)
+    })
 
-    
+
+
 
 
     // Send a ping to confirm a successful connection
