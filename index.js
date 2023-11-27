@@ -202,9 +202,9 @@ async function run() {
       const result = await reviewCollection.find().sort({ reviewTime: -1 }).toArray()
       res.send(result)
     })
-    app.get('/reviews/:email', async (req, res) => {
+    app.get('/userMyReviews/:email', async (req, res) => {
       const email = req.params.email;
-      const query = { email: email }
+      const query = { reviewerEmail: email }
       const result = await reviewCollection.find(query).toArray()
       res.send(result)
     })
@@ -238,6 +238,7 @@ async function run() {
       const result = await wishListCollection.insertOne(wishlist)
       res.send(result)
     })
+
     app.get('/wishlist/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -268,6 +269,11 @@ async function run() {
     // user property brought related api
     app.post('/propertyBrought', async (req, res) => {
       const brought = req.body;
+      const query = {propertiesId: brought.propertiesId}
+      const isExisting = await propertyBroughtCollection.findOne(query)
+      if(isExisting){
+        return res.send({message: "already added this item", insertedId: null})
+      }
       const result = await propertyBroughtCollection.insertOne(brought)
       res.send(result)
     })
@@ -277,10 +283,12 @@ async function run() {
       const result = await propertyBroughtCollection.find(query).toArray()
       res.send(result)
     })
-
-
-
-
+    app.get('/requestedProperties/:email',async(req,res)=>{
+      const email = req.params.id;
+      const query = {agentEmail: email}
+      const result = await propertyBroughtCollection.find(query).toArray();
+      res.send(result)
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
