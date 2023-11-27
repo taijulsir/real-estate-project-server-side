@@ -31,6 +31,7 @@ async function run() {
     const propertyCollection = client.db('realEstateDB').collection('properties')
     const reviewCollection = client.db('realEstateDB').collection('reviews')
     const wishListCollection = client.db('realEstateDB').collection('wishlist')
+    const propertyBroughtCollection = client.db('realEstateDB').collection('propertyBrought')
 
     // middlewares verify token
     const verifyToken = async (req, res, next) => {
@@ -237,7 +238,6 @@ async function run() {
       const result = await wishListCollection.insertOne(wishlist)
       res.send(result)
     })
-
     app.get('/wishlist',async(req,res)=>{
       const result = await wishListCollection.find().toArray()
       res.send(res)
@@ -248,6 +248,17 @@ async function run() {
       const result = await wishListCollection.find(query).toArray()
       res.send(result)
     })
+    app.delete('/wishlist/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await wishListCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    // user property brought related api
+  
+
+    
 
 
     // Send a ping to confirm a successful connection
