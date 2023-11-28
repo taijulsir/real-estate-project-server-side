@@ -3,16 +3,16 @@ const app = express()
 require("dotenv").config();
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
+
 
 app.use(cors())
 app.use(express.json())
 
 
-
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.49cfwvw.mongodb.net/?retryWrites=true&w=majority`;
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -21,17 +21,18 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
-
     const userCollection = client.db('realEstateDB').collection('users')
     const propertyCollection = client.db('realEstateDB').collection('properties')
     const reviewCollection = client.db('realEstateDB').collection('reviews')
     const wishListCollection = client.db('realEstateDB').collection('wishlist')
     const propertyBroughtCollection = client.db('realEstateDB').collection('propertyBrought')
+    const paymentCollection = client.db('realEstateDB').collection('payments')
+
+
 
     // middlewares verify token
     const verifyToken = async (req, res, next) => {
@@ -47,7 +48,6 @@ async function run() {
         next()
       })
     }
-
     // check admin or agent
     const verifyAdminAgent = async (req, res, next) => {
       const email = req.decoded.email;
@@ -67,7 +67,6 @@ async function run() {
         return res.status(403).send({ message: "Forbidden access" })
       }
     }
-
     // jwt related api
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -111,7 +110,22 @@ async function run() {
       const result = await userCollection.updateOne(query, updatedRole)
       res.send(result)
     })
-
+    // handle fraud agent
+    app.patch('/users/fraud/:id', async (req, res) => {
+      const { status } = req.body
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const updateStatus = {
+        $set: {
+          status: status
+        }
+      }
+      const statusResult = await userCollection.updateOne(query, updateStatus);
+      const updatedUser = await userCollection.findOne(query)
+      const fraudEmail = { agentEmail: updatedUser.email }
+      const deletedPropertiesResult = await propertyCollection.deleteMany(fraudEmail)
+      res.send({ statusResult, deletedPropertiesResult })
+    })
     // check admin or agent
     app.get('/users/checkRole/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -272,8 +286,8 @@ async function run() {
         wishlistId: bought.wishlistId,
         buyerEmail: bought.buyerEmail
       })
-      if(isExisting){
-        return res.send({message:'Property already offered',insertedId:null})
+      if (isExisting) {
+        return res.send({ message: 'Property already offered', insertedId: null })
       }
       const result = await propertyBroughtCollection.insertOne(bought)
       res.send(result)
@@ -290,30 +304,78 @@ async function run() {
       const result = await propertyBroughtCollection.find(query).toArray();
       res.send(result)
     })
+    app.get('/propertyBought/:id',async(req,res)=>{
+      const id= req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await propertyBroughtCollection.findOne(query)
+      res.send(result)
+    })
     // update multiple data status
-    app.put('/api/request/:requestId',async(req,res)=>{
-      const {status} = req.body;
+    app.put('/api/request/:requestId', async (req, res) => {
+      const { status } = req.body;
       const requestId = req.params.requestId;
-      const query = {_id: new ObjectId (requestId)}
-      const acceptedRequest = await propertyBroughtCollection.findOne (query);
+      const query = { _id: new ObjectId(requestId) }
+      const acceptedRequest = await propertyBroughtCollection.findOne(query);
       const updateAcceptedStatus = {
-        $set:{
+        $set: {
           status: status
         }
       }
-      const accptedResult = await propertyBroughtCollection.updateOne(query,updateAcceptedStatus);
-      const rejectQuery = {wishlistId: acceptedRequest.wishlistId,_id: { $ne: new ObjectId(requestId) }}
+      const accptedResult = await propertyBroughtCollection.updateOne(query, updateAcceptedStatus);
+      const rejectQuery = { wishlistId: acceptedRequest.wishlistId, _id: { $ne: new ObjectId(requestId) } }
       const updateRejectedStatus = {
-        $set:{
+        $set: {
           status: "rejected"
         }
       }
-      const rejectedResult = await propertyBroughtCollection.updateMany(rejectQuery,updateRejectedStatus)
-      res.send({accptedResult,rejectedResult})
-     
+      const rejectedResult = await propertyBroughtCollection.updateMany(rejectQuery, updateRejectedStatus)
+      res.send({ accptedResult, rejectedResult })
+
     })
     // update reject
-    
+    app.patch('/api/reject/:requestId', async (req, res) => {
+      const { status } = req.body;
+      const requestId = req.params.requestId;
+      const query = { _id: new ObjectId(requestId) }
+      const updateRejectedStatus = {
+        $set: {
+          status: status
+        }
+      }
+      const rejectResult = await propertyBroughtCollection.updateOne(query, updateRejectedStatus)
+      res.send(rejectResult)
+    })
+
+
+    // payment with stripe
+    // Payment Related Api
+    // Payment Related Api *Post*
+    app.post('/create-payment-intent', async (req, res) => {
+      try {
+        const { price } = req.body;
+        const amount = parseInt(price * 100);
+        console.log(amount, 'amount inside the intent');
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: 'usd',
+          payment_method_types: ['card']
+        });
+        res.send({
+          clientSecret: paymentIntent.client_secret
+        });
+      } catch (error) {
+        console.error('Error creating payment intent:', error.message);
+      }
+    });
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const result = await paymentCollection.insertOne(payment)
+      console.log('payment info', payment)
+      res.send(result)
+    })
+
+   
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -324,10 +386,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
-
-
 app.get("/", async (req, res) => {
   try {
     res.send("The real estate project server is running")
