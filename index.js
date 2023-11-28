@@ -245,9 +245,7 @@ async function run() {
       const query = { _id: new ObjectId(id) }
       const wishlistItem = await wishListCollection.findOne(query)
       const priceRange = wishlistItem.priceRange;
-      const [minPrice, maxPrice] = priceRange
-        .split(' - ')
-        .map((price) => parseFloat(price.replace(/,/g, '')));
+      const [minPrice, maxPrice] = priceRange.split('-').map(price => parseFloat(price.replace(/,/g, '')));
       const result = {
         ...wishlistItem,
         priceRange: [minPrice, maxPrice],
