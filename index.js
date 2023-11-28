@@ -290,6 +290,30 @@ async function run() {
       const result = await propertyBroughtCollection.find(query).toArray();
       res.send(result)
     })
+    // update multiple data status
+    app.put('/api/request/:requestId',async(req,res)=>{
+      const {status} = req.body;
+      const requestId = req.params.requestId;
+      const query = {_id: new ObjectId (requestId)}
+      const acceptedRequest = await propertyBroughtCollection.findOne (query);
+      const updateAcceptedStatus = {
+        $set:{
+          status: status
+        }
+      }
+      const accptedResult = await propertyBroughtCollection.updateOne(query,updateAcceptedStatus);
+      const rejectQuery = {wishlistId: acceptedRequest.wishlistId,_id: { $ne: new ObjectId(requestId) }}
+      const updateRejectedStatus = {
+        $set:{
+          status: "rejected"
+        }
+      }
+      const rejectedResult = await propertyBroughtCollection.updateMany(rejectQuery,updateRejectedStatus)
+      res.send({accptedResult,rejectedResult})
+     
+    })
+    // update reject
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
