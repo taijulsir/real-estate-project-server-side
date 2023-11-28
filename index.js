@@ -56,11 +56,11 @@ async function run() {
       const isAdmin = user?.role === "admin"
       const isAgent = user?.role === "agent"
       if (isAdmin) {
-        return res.status(200).send({ message: "Admin access", role: "admin" })
+        // return res.status(200).send({ message: "Admin access", role: "admin" })
         next()
       }
       else if (isAgent) {
-        return res.status(200).send({ message: "Agent Access", role: "agent" })
+        // return res.status(200).send({ message: "Agent Access", role: "agent" })
         next()
       }
       else {
@@ -230,15 +230,16 @@ async function run() {
     // wishlist related api
     app.post('/wishlist', async (req, res) => {
       const wishlist = req.body;
-      const query = { wishlistId: wishlist?.wishlistId }
-      const isExisting = await wishListCollection.findOne(query)
+      const isExisting = await wishListCollection.findOne({
+        wishlistId: wishlist.wishlistId,
+        wishlisterEmail: wishlist.wishlisterEmail
+      })
       if (isExisting) {
-        return res.send({ message: "already added this item", insertedId: null })
+        return res.send({ message: 'Already added this property', insertedId: null });
       }
       const result = await wishListCollection.insertOne(wishlist)
       res.send(result)
     })
-
     app.get('/wishlist/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -268,13 +269,15 @@ async function run() {
 
     // user property brought related api
     app.post('/propertyBrought', async (req, res) => {
-      const brought = req.body;
-      const query = {propertiesId: brought.propertiesId}
-      const isExisting = await propertyBroughtCollection.findOne(query)
+      const bought = req.body;
+      const isExisting = await propertyBroughtCollection.findOne({
+        wishlistId: bought.wishlistId,
+        buyerEmail: bought.buyerEmail
+      })
       if(isExisting){
-        return res.send({message: "already added this item", insertedId: null})
+        return res.send({message:'Property already offered',insertedId:null})
       }
-      const result = await propertyBroughtCollection.insertOne(brought)
+      const result = await propertyBroughtCollection.insertOne(bought)
       res.send(result)
     })
     app.get('/propertyBrought/:email', async (req, res) => {
@@ -283,9 +286,9 @@ async function run() {
       const result = await propertyBroughtCollection.find(query).toArray()
       res.send(result)
     })
-    app.get('/requestedProperties/:email',async(req,res)=>{
-      const email = req.params.id;
-      const query = {agentEmail: email}
+    app.get('/requestedProperties/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { agentEmail: email }
       const result = await propertyBroughtCollection.find(query).toArray();
       res.send(result)
     })
