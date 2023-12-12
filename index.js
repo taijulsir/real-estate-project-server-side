@@ -28,6 +28,7 @@ async function run() {
     const userCollection = client.db('realEstateDB').collection('users')
     const propertyCollection = client.db('realEstateDB').collection('properties')
     const reviewCollection = client.db('realEstateDB').collection('reviews')
+    const reportCollection = client.db('realEstateDB').collection('report')
     const wishListCollection = client.db('realEstateDB').collection('wishlist')
     const propertyBroughtCollection = client.db('realEstateDB').collection('propertyBrought')
     const paymentCollection = client.db('realEstateDB').collection('payments')
@@ -449,6 +450,56 @@ async function run() {
     });
 
 
+    // report related api
+
+    // Api to insert reported Properties
+    app.post('/reportedProperties', async (req, res) => {
+      try {
+        const report = req.body;
+        const result = await reportCollection.insertOne(report)
+        res.send(result)
+      }
+      catch (error) {
+        console.error("Error in inserting reported Property", error)
+        res.status(500).send("Internal Server Error")
+      }
+    })
+
+    app.get('/reportedProperties', async (req, res) => {
+      try {
+        const result = await reportCollection.find().toArray()
+        res.send(result)
+      }
+      catch (error) {
+        console.error('Error occured in get reportedProperties', error)
+        res.status(500).send("Internal Server Error")
+      }
+    })
+
+    app.patch('/reportedProperties/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { status, propertyId } = req.body;
+        const query = { _id: new ObjectId(id) }
+        const updateReportStatus = {
+          $set: {
+            status: status
+          }
+        }
+        const updateResult = await reportCollection.updateOne(query,updateReportStatus)
+        const propertyQuery = { _id: new ObjectId(propertyId) }
+        const deleteProperty = await propertyCollection.deleteOne(propertyQuery)
+        const reviewquery = {propertyId: propertyId}
+        const deleteReview = await reviewCollection.deleteMany(reviewquery)
+        res.send({ updateResult, deleteProperty, deleteReview })
+      }
+      catch (error) {
+        console.error('Error occured in get reportedProperties', error)
+        res.status(500).send("Internal Server Error")
+      }
+    })
+
+
     // wishlist related api
 
     // Create or update a wishlist item
@@ -757,12 +808,12 @@ run().catch(console.dir);
 // Default Route: Check Server Status
 app.get("/", async (req, res) => {
   try {
-      // Sending a success message to indicate that the server is running
-      res.send("The real estate project server is running");
+    // Sending a success message to indicate that the server is running
+    res.send("The real estate project server is running");
   } catch (error) {
-      // Handling errors that might occur during server status check
-      console.error('Error checking server status:', error.message);
-      res.status(500).send({ error: 'Error checking server status' });
+    // Handling errors that might occur during server status check
+    console.error('Error checking server status:', error.message);
+    res.status(500).send({ error: 'Error checking server status' });
   }
 });
 
