@@ -465,6 +465,7 @@ async function run() {
       }
     })
 
+    // Api to get reported properties
     app.get('/reportedProperties', async (req, res) => {
       try {
         const result = await reportCollection.find().toArray()
@@ -476,6 +477,7 @@ async function run() {
       }
     })
 
+    // Api to updte reported properties and delete properties
     app.patch('/reportedProperties/:id', async (req, res) => {
       try {
         const id = req.params.id;
@@ -494,11 +496,10 @@ async function run() {
         res.send({ updateResult, deleteProperty, deleteReview })
       }
       catch (error) {
-        console.error('Error occured in get reportedProperties', error)
+        console.error('Error occured in get reportedProperties', error)     
         res.status(500).send("Internal Server Error")
       }
     })
-
 
     // wishlist related api
 
@@ -585,8 +586,6 @@ async function run() {
         res.status(500).send({ message: 'Internal Server Error' });
       }
     });
-
-
 
     // user property brought related api
     app.post('/propertyBrought', async (req, res) => {
